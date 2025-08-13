@@ -1,12 +1,23 @@
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { FiArrowRight, FiCheckCircle, FiXCircle, FiCopy } from "react-icons/fi";
 
 export function Airdrop() {
     const wallet = useWallet();
     const { connection } = useConnection();
     const [amount, setAmount] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [status, setStatus] = useState(null);
+    const [signature, setSignature] = useState(null);
+    const [copied, setCopied] = useState(false);
+
+    const copyToClipboard = () => {
+        navigator.clipboard.writeText(signature);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
 
     async function sendAirdrop() {
         if (!wallet.publicKey) {
@@ -26,72 +37,212 @@ export function Airdrop() {
         }
 
         setIsLoading(true);
+        setStatus(null);
+        setSignature(null);
+        
         try {
-            const signature = await connection.requestAirdrop(
+            const sig = await connection.requestAirdrop(
                 wallet.publicKey,
                 solAmount * LAMPORTS_PER_SOL
             );
 
-            alert(`🎉 Airdropped ${solAmount} SOL successfully!`);
-            console.log("Transaction Signature:", signature);
-            setAmount("");
+            setStatus('success');
+            setSignature(sig);
+            setTimeout(() => setAmount(""), 2000);
+            console.log("Transaction Signature:", sig);
         } catch (err) {
             console.error(err);
-            alert("❌ Failed to airdrop SOL");
+            setStatus('error');
         } finally {
             setIsLoading(false);
         }
     }
 
     return (
-        <div className="max-w-md mx-auto p-8 rounded-xl bg-gray-900/80 backdrop-blur-sm border border-gray-700 shadow-2xl">
-            <h2 className="text-2xl font-bold text-center mb-2 bg-gradient-to-r from-purple-500 to-green-400 bg-clip-text text-transparent">
-                SOL Faucet
-            </h2>
-            <p className="text-gray-400 text-center mb-6">
-                Get test SOL tokens on the Solana devnet for testing purposes
-            </p>
-            
-            <div className="flex gap-2 mb-4">
-                <input
-                    type="number"
-                    className="flex-1 px-4 py-3 rounded-lg bg-gray-800 border border-gray-700 focus:border-green-400 focus:outline-none text-white transition-colors"
-                    placeholder="Enter SOL amount"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    step="0.1"
-                    min="0"
-                />
-                <button 
-                    className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-                        isLoading || !amount
-                            ? "bg-gray-600 cursor-not-allowed"
-                            : "bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 hover:-translate-y-0.5 hover:shadow-lg"
-                    }`}
-                    onClick={sendAirdrop}
-                    disabled={isLoading || !amount}
+        <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="max-w-md w-full mx-auto p-8 rounded-2xl bg-gray-900/80 backdrop-blur-sm border border-gray-700 shadow-2xl relative overflow-hidden"
+        >
+            {/* Animated background elements */}
+            <motion.div 
+                className="absolute -top-20 -left-20 w-40 h-40 rounded-full bg-purple-500/10 blur-xl"
+                animate={{
+                    x: [0, 10, 0],
+                    y: [0, 10, 0],
+                }}
+                transition={{
+                    duration: 8,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                }}
+            />
+            <motion.div 
+                className="absolute -bottom-20 -right-20 w-40 h-40 rounded-full bg-blue-500/10 blur-xl"
+                animate={{
+                    x: [0, -10, 0],
+                    y: [0, -10, 0],
+                }}
+                transition={{
+                    duration: 10,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                }}
+            />
+
+            <div className="relative z-10">
+                <motion.h2 
+                    className="text-3xl font-bold text-center mb-3 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 }}
                 >
-                    {isLoading ? (
-                        <div className="flex items-center justify-center">
-                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Processing
-                        </div>
-                    ) : (
-                        "Request SOL"
-                    )}
-                </button>
-            </div>
-            
-            <div className="text-center">
+                    SOL Faucet
+                </motion.h2>
+                
+                <motion.p 
+                    className="text-gray-400 text-center mb-8"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                >
+                    Get test SOL tokens on the Solana devnet
+                </motion.p>
+                
+                <motion.div 
+                    className="flex flex-col gap-4 mb-6"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.4 }}
+                >
+                    <div className="relative">
+                        <input
+                            type="number"
+                            className="w-full px-5 py-4 rounded-xl bg-gray-800 border border-gray-700 focus:border-purple-400 focus:outline-none text-white transition-all"
+                            placeholder="Enter SOL amount"
+                            value={amount}
+                            onChange={(e) => setAmount(e.target.value)}
+                            step="0.1"
+                            min="0"
+                        />
+                        <motion.span 
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+                            animate={{
+                                opacity: amount ? 0 : 1,
+                                x: amount ? 10 : 0
+                            }}
+                        >
+                            SOL
+                        </motion.span>
+                    </div>
+                    
+                    <motion.button 
+                        className={`w-full py-4 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${
+                            isLoading || !amount
+                                ? "bg-gray-700 cursor-not-allowed"
+                                : "bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+                        }`}
+                        onClick={sendAirdrop}
+                        disabled={isLoading || !amount}
+                        whileHover={(!isLoading && amount) ? { 
+                            y: -2,
+                            boxShadow: "0 10px 20px rgba(139, 92, 246, 0.3)"
+                        } : {}}
+                        whileTap={(!isLoading && amount) ? { scale: 0.98 } : {}}
+                    >
+                        {isLoading ? (
+                            <>
+                                <motion.span
+                                    animate={{ rotate: 360 }}
+                                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                    className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
+                                />
+                                Processing...
+                            </>
+                        ) : status === 'success' ? (
+                            <>
+                                <FiCheckCircle className="text-xl" />
+                                Success!
+                            </>
+                        ) : status === 'error' ? (
+                            <>
+                                <FiXCircle className="text-xl" />
+                                Try Again
+                            </>
+                        ) : (
+                            <>
+                                <span>Request SOL</span>
+                                <FiArrowRight />
+                            </>
+                        )}
+                    </motion.button>
+                </motion.div>
+                
                 {wallet.publicKey && (
-                    <p className="text-sm font-mono text-green-400">
-                        Wallet: {wallet.publicKey.toBase58().slice(0, 6)}...{wallet.publicKey.toBase58().slice(-4)}
-                    </p>
+                    <motion.div 
+                        className="text-center mb-6"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.5 }}
+                    >
+                        <p className="text-sm font-mono text-green-400">
+                            Connected: {wallet.publicKey.toBase58().slice(0, 6)}...{wallet.publicKey.toBase58().slice(-4)}
+                        </p>
+                    </motion.div>
                 )}
+
+                <AnimatePresence>
+                    {signature && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="mt-4 p-4 rounded-xl bg-gray-800/50 border border-gray-700"
+                        >
+                            <div className="flex justify-between items-center mb-2">
+                                <h3 className="text-sm font-semibold text-purple-400">Transaction Signature</h3>
+                                <motion.button
+                                    onClick={copyToClipboard}
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    className="text-gray-400 hover:text-white transition-colors"
+                                    title="Copy to clipboard"
+                                >
+                                    <FiCopy />
+                                </motion.button>
+                            </div>
+                            <div className="relative">
+                                <p className="text-xs font-mono break-all bg-gray-900/50 p-2 rounded">
+                                    {signature}
+                                </p>
+                                <AnimatePresence>
+                                    {copied && (
+                                        <motion.span
+                                            initial={{ opacity: 0, y: -10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -10 }}
+                                            className="absolute -top-6 right-0 text-xs bg-green-500/90 text-white px-2 py-1 rounded"
+                                        >
+                                            Copied!
+                                        </motion.span>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                            <motion.a
+                                href={`https://explorer.solana.com/tx/${signature}?cluster=devnet`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="mt-2 inline-block text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                                whileHover={{ x: 2 }}
+                            >
+                                View on Solana Explorer →
+                            </motion.a>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
-        </div>
+        </motion.div>
     );
 }
